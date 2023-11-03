@@ -2,7 +2,8 @@
   (:gen-class)
   (:require [quip.core :as qp]
             [tower-struggle.scenes.menu :as menu]
-            [tower-struggle.scenes.level-01 :as level-01]))
+            [tower-struggle.scenes.level-01 :as level-01]
+            [tower-struggle.common :as common]))
 
 (defn setup
   "The initial state of the game"
@@ -18,7 +19,10 @@
 ;; Configure the game
 (def tower-struggle-game
   (qp/game {:title          "tower-struggle"
-            :size           [800 600]
+            :size           [800
+                             (min (- (second (common/get-screen-size))
+                                     100)
+                                  2000)]
             :setup          setup
             :init-scenes-fn init-scenes
             :current-scene  :menu}))

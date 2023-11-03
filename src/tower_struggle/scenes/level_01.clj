@@ -1,8 +1,7 @@
 (ns tower-struggle.scenes.level-01
   (:require [quip.sprite :as qpsprite]
-            [quip.utils :as qpu]))
-
-(def light-green [133 255 199])
+            [quip.utils :as qpu]
+            [tower-struggle.common :as common]))
 
 (defn sprites
   "The initial list of sprites for this scene"
@@ -12,7 +11,7 @@
 (defn draw-level-01
   "Called each frame, draws the current scene to the screen"
   [state]
-  (qpu/background light-green)
+  (qpu/background common/blue)
   (qpsprite/draw-scene-sprites state))
 
 (defn update-level-01
