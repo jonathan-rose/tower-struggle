@@ -100,7 +100,7 @@
     (fn [{:keys [current-scene] :as state}]
       (-> state
           (update-in [:scenes current-scene :sprites] conj (square))
-          (qpdelay/add-delay (box-delay))))))
+          (qpdelay/add-delay (add-square-delay))))))
 
 (defn init
   "Initialise this scene"
@@ -108,7 +108,6 @@
   {:sprites (sprites)
    :draw-fn draw-menu
    :update-fn update-menu
-   :mouse-pressed-fns [qpbutton/handle-buttons-pressed
-                       box]
+   :mouse-pressed-fns [qpbutton/handle-buttons-pressed]
    :mouse-released-fns [qpbutton/handle-buttons-released]
    :delays [(add-square-delay)]})
