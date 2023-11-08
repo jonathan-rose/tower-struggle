@@ -152,7 +152,7 @@
             :locked? false})))
 
 (defn allowed-location?
-  [{:keys [pos w h current-rotation rotations] :as t} {:keys [current-scene] :as state}]
+  [{:keys [current-scene] :as state} {:keys [pos w h current-rotation rotations] :as t}]
   (let [[x y] pos
         sprites (get-in state [:scenes current-scene :sprites])
         locked-minos (filter (qpsprite/group-pred :mino) sprites)
@@ -164,7 +164,7 @@
                   ;; right boundary
                   (<= (q/width) (+ x (* w dx)))
                   ;; bottom boundary
-                  (<= (q/height) (+ y (* h (inc dy))))
+                  (<= (q/height) (+ y (* h dy)))
                   ;; check other previously locked minos
                   (some (fn their-minos [{locked-pos :pos}]
                           (= [(+ x (* w dx))
@@ -178,7 +178,7 @@
   (if locked?
     t
     (let [updated-t (update-in t [:pos 0] - (:w t))]
-      (if (allowed-location? updated-t state)
+      (if (allowed-location? state updated-t)
         updated-t
         t))))
 
@@ -187,7 +187,7 @@
   (if locked?
     t
     (let [updated-t (update-in t [:pos 0] + (:w t))]
-      (if (allowed-location? updated-t state)
+      (if (allowed-location? state updated-t)
         updated-t
         t))))
 
@@ -196,7 +196,7 @@
   (if locked?
     t
     (let [updated-t (update t :current-rotation (fn [n] (mod (inc n) 4)))]
-      (if (allowed-location? updated-t state)
+      (if (allowed-location? state updated-t)
         updated-t
         t))))
 
@@ -205,7 +205,7 @@
   (if locked?
     t
     (let [updated-t (update t :current-rotation (fn [n] (mod (dec n) 4)))]
-      (if (allowed-location? updated-t state)
+      (if (allowed-location? state updated-t)
         updated-t
         t))))
 

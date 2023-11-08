@@ -9,7 +9,7 @@
 (defn sprites
   "The initial list of sprites for this scene"
   []
-  [(t/tetromino [300 900])])
+  [(t/tetromino [300 800])])
 
 (defn draw-level-01
   "Called each frame, draws the current scene to the screen"
@@ -35,32 +35,18 @@
                             m/create-multiple))))))
 
 (defn lock-tetrominos
-  "Find any tetrominos which have _just_ about to move and are sitting
-  on top of a locked mino, lock them down."
-  [{:keys [current-scene] :as state}]
-  (let [sprites (get-in state [:scenes current-scene :sprites])
-        locked-minos (filter (qpsprite/group-pred :mino) sprites)]
-    (qpsprite/update-sprites-by-pred
-     state
-     (fn [s]
-       (and (= :tetromino (:sprite-group s))
-            (= 1 (:fall-delay s))  ; will move next frame
-            (let [{:keys [pos w h current-rotation rotations]} s
-                  [x y] pos
-                  minos (get rotations current-rotation)]
-              (some (fn my-minos [[m [dx dy]]]
-                      ;; the `(inc dy)` here is because we are interested in
-                      ;; the _bottom_ edge of the mino
-                      (or (<= (q/height) (+ y (* h (inc dy))))
-                          ;; check if other previously locked minos beneath
-                          (some (fn their-minos [{locked-pos :pos}]
-                                  (= [(+ x (* w dx))
-                                      (+ y (* h (inc dy)))]
-                                     locked-pos))
-                                locked-minos)))
-                    minos))))
-     (fn [s]
-       (assoc s :locked? true)))))
+  "Find any tetrominos which have _just_ about to move where moving down
+  would be illegal, lock them down."
+  [state]
+  (qpsprite/update-sprites-by-pred
+   state
+   (fn [s]
+     (and (= :tetromino (:sprite-group s))
+          (= 1 (:fall-delay s))  ; will move next frame
+          (let [updated-tetromino (update-in s [:pos 1] + (:h s))]
+            (not (t/allowed-location? state updated-tetromino)))))
+   (fn [s]
+     (assoc s :locked? true))))
 
 (defn update-level-01
   "Called each frame, update the sprites in the current scene"
