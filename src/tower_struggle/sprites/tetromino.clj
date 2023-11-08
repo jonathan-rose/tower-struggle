@@ -122,20 +122,6 @@
 (def initial-fall-delay 40)
 (def mino-size 50)
 
-(defn update-locked
-  [{:keys [pos w h current-rotation rotations] :as t}]
-  (let [[x y] pos
-        minos (get rotations current-rotation)]
-    (if (some (fn [[m [dx dy]]]
-                ;; the `(inc dy)` here is because we are interested in
-                ;; the _bottom_ edge of the mino
-                (or (<= (q/height) (+ y (* h (inc dy))))
-                    ;; also check if other previously locked minos beneath
-                    ))
-              minos)
-      (assoc t :locked? true)
-      t)))
-
 (defn update-tetromino
   [{:keys [w h fall-delay locked?] :as t}]
   (if locked?
@@ -143,8 +129,7 @@
     (if (zero? fall-delay)
       (-> t
           (assoc :fall-delay initial-fall-delay)
-          (update-in [:pos 1] + h)
-          update-locked)
+          (update-in [:pos 1] + h))
       (-> t
           (update :fall-delay dec)))))
 
@@ -177,3 +162,16 @@
   (if locked?
     t
     (update-in t [:pos 0] + mino-size)))
+
+(defn all-minos
+  [ts]
+  (mapcat (fn [{:keys [pos w h current-rotation rotations rooms] :as tetromino}]
+            (let [[x y] pos
+                  minos (get rotations current-rotation)]
+              (for [[m [dx dy]] minos]
+                (let [room (get rooms m)]
+                  [[(+ x (* w dx))
+                    (+ y (* h dy))]
+                   room
+                   (if (= w h) w mino-size)]))))
+          ts))
