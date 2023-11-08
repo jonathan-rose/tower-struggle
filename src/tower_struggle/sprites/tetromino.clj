@@ -151,17 +151,63 @@
             :fall-delay initial-fall-delay
             :locked? false})))
 
+(defn allowed-location?
+  [{:keys [pos w h current-rotation rotations] :as t} {:keys [current-scene] :as state}]
+  (let [[x y] pos
+        sprites (get-in state [:scenes current-scene :sprites])
+        locked-minos (filter (qpsprite/group-pred :mino) sprites)
+        minos (get rotations current-rotation)]
+    (not (some (fn my-minos [[m [dx dy]]]
+                 (or
+                  ;; left boundary
+                  (< (+ x (* w dx)) 0)
+                  ;; right boundary
+                  (<= (q/width) (+ x (* w dx)))
+                  ;; bottom boundary
+                  (<= (q/height) (+ y (* h (inc dy))))
+                  ;; check other previously locked minos
+                  (some (fn their-minos [{locked-pos :pos}]
+                          (= [(+ x (* w dx))
+                              (+ y (* h dy))]
+                             locked-pos))
+                        locked-minos)))
+               minos))))
+
 (defn move-left
-  [{:keys [locked? pos] :as t}]
+  [state {:keys [locked? pos] :as t}]
   (if locked?
     t
-    (update-in t [:pos 0] - mino-size)))
+    (let [updated-t (update-in t [:pos 0] - (:w t))]
+      (if (allowed-location? updated-t state)
+        updated-t
+        t))))
 
 (defn move-right
-  [{:keys [locked? pos] :as t}]
+  [state {:keys [locked? pos] :as t}]
   (if locked?
     t
-    (update-in t [:pos 0] + mino-size)))
+    (let [updated-t (update-in t [:pos 0] + (:w t))]
+      (if (allowed-location? updated-t state)
+        updated-t
+        t))))
+
+(defn rotate-clockwise
+  [state {:keys [locked?] :as t}]
+  (if locked?
+    t
+    (let [updated-t (update t :current-rotation (fn [n] (mod (inc n) 4)))]
+      (if (allowed-location? updated-t state)
+        updated-t
+        t))))
+
+(defn rotate-anticlockwise
+  [state {:keys [locked?] :as t}]
+  (if locked?
+    t
+    (let [updated-t (update t :current-rotation (fn [n] (mod (dec n) 4)))]
+      (if (allowed-location? updated-t state)
+        updated-t
+        t))))
 
 (defn all-minos
   [ts]

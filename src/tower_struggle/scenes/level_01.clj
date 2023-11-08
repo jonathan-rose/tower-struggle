@@ -70,21 +70,33 @@
       lock-tetrominos
       transfer-locked-tetrominos))
 
-;; @TODO: these left/right functions need to take into account locked
-;; minos so we don't move into them.
 (defn handle-left
   [{:keys [current-scene] :as state}]
   (qpsprite/update-sprites-by-pred
    state
    (qpsprite/group-pred :tetromino)
-   t/move-left))
+   (partial t/move-left state)))
 
 (defn handle-right
   [{:keys [current-scene] :as state}]
   (qpsprite/update-sprites-by-pred
    state
    (qpsprite/group-pred :tetromino)
-   t/move-right))
+   (partial t/move-right state)))
+
+(defn handle-up
+  [{:keys [current-scene] :as state}]
+  (qpsprite/update-sprites-by-pred
+   state
+   (qpsprite/group-pred :tetromino)
+   (partial t/rotate-clockwise state)))
+
+(defn handle-down
+  [{:keys [current-scene] :as state}]
+  (qpsprite/update-sprites-by-pred
+   state
+   (qpsprite/group-pred :tetromino)
+   (partial t/rotate-anticlockwise state)))
 
 (defn handle-space
   [{:keys [current-scene] :as state}]
@@ -99,6 +111,8 @@
   [state e]
   (let [handlers {:left handle-left
                   :right handle-right
+                  :up handle-up
+                  :down handle-down
                   :space handle-space
                   10 handle-enter}
         k (:key e)
