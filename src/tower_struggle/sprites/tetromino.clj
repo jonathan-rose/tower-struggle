@@ -119,16 +119,17 @@
                 w
                 h)))))
 
-(def initial-fall-delay 40)
+(def default-max-fall-delay 40)
+(def fast-max-fall-delay 2)
 (def mino-size 50)
 
 (defn update-tetromino
-  [{:keys [w h fall-delay locked?] :as t}]
+  [{:keys [w h fall-delay max-fall-delay locked?] :as t}]
   (if locked?
     t
     (if (zero? fall-delay)
       (-> t
-          (assoc :fall-delay initial-fall-delay)
+          (assoc :fall-delay max-fall-delay)
           (update-in [:pos 1] + h))
       (-> t
           (update :fall-delay dec)))))
@@ -148,7 +149,8 @@
             :rotations (get piece-rotations piece)
             :current-rotation 0
             :rooms (random-rooms)
-            :fall-delay initial-fall-delay
+            :fall-delay default-max-fall-delay
+            :max-fall-delay default-max-fall-delay
             :locked? false})))
 
 (defn allowed-location?
@@ -208,6 +210,22 @@
       (if (allowed-location? state updated-t)
         updated-t
         t))))
+
+(defn fast-speed
+  [{:keys [max-fall-delay] :as t}]
+  (if (= max-fall-delay default-max-fall-delay)
+    (-> t
+        (assoc :max-fall-delay fast-max-fall-delay)
+        (assoc :fall-delay fast-max-fall-delay))
+    t))
+
+(defn default-speed
+  [{:keys [max-fall-delay] :as t}]
+  (if (= max-fall-delay fast-max-fall-delay)
+    (-> t
+        (assoc :max-fall-delay default-max-fall-delay)
+        (assoc :fall-delay default-max-fall-delay))
+    t))
 
 (defn all-minos
   [ts]
