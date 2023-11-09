@@ -10,9 +10,9 @@
   [{:keys [pos w h room] :as mino}]
   (let [[x y] pos]
     (case room
-      :resi (qpu/fill (nth (iterate qpu/darken common/purple) 2))
-      :comm (qpu/fill (nth (iterate qpu/darken common/yellow) 2))
-      :util (qpu/fill (nth (iterate qpu/darken common/orange) 2)))
+      :resi (qpu/fill (qpu/darken common/purple))
+      :comm (qpu/fill (qpu/darken common/yellow))
+      :util (qpu/fill (qpu/darken common/orange)))
     (q/no-stroke)
     (q/rect x y w h)))
 
@@ -25,8 +25,7 @@
    :h size
    :draw-fn draw-mino
    :update-fn identity
-   :other {:room room
-           :locked? true}))
+   :other {:room room}))
 
 (defn create-multiple
   [param-lists]
