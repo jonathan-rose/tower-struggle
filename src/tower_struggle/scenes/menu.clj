@@ -51,7 +51,14 @@
 (defn sprites
   "The initial list of sprites for this scene"
   []
-  [(qpsprite/text-sprite "TOWER"
+  [(qpsprite/image-sprite
+    :background
+    [(/ (q/width) 2)
+     (- (/ (q/height) 2) 100)]
+    1024
+    1792
+    "img/background.png")
+   (qpsprite/text-sprite "TOWER"
                          [(* 0.5 (q/width))
                           (* 0.28 (q/height))]
                          :size (- qpu/title-text-size 30)
