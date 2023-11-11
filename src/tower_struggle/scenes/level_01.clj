@@ -1,6 +1,8 @@
 (ns tower-struggle.scenes.level-01
   (:require [quil.core :as q]
             [quip.sprite :as qpsprite]
+            [quip.sound :as qpsound]
+            [quip.tween :as qptween]
             [quip.utils :as qpu]
             [tower-struggle.common :as common]
             [tower-struggle.sprites.tetromino :as t]
@@ -53,6 +55,7 @@
           (let [updated-tetromino (update-in s [:pos 1] + (:h s))]
             (not (t/allowed-location? state updated-tetromino)))))
    (fn [s]
+     (qpsound/play "click.wav")
      (assoc s :locked? true))))
 
 (defn add-new-tetrominos
@@ -125,7 +128,15 @@
           (qpsprite/update-sprites-by-pred
            #(#{:tetromino :mino} (:sprite-group %))
            (fn [s]
-             (update-in s [:pos 1] + (:h s))))
+             ;; sorry this is a bit ugly, minos need their
+             ;; `display-pos` updated as well so their lock-in
+             ;; animations stay in the right place.
+             (if (= :mino (:sprite-group s))
+               (-> s
+                   (update-in [:pos 1] + (:h s))
+                   (update-in [:display-pos 1] + (:h s)))
+               (-> s
+                   (update-in [:pos 1] + (:h s))))))
           ;; move background down by a pixel to give some parallax
           (qpsprite/update-sprites-by-pred
            (qpsprite/group-pred :background)
@@ -146,6 +157,7 @@
   (-> state
       update-framerate
       qpsprite/update-scene-sprites
+      qptween/update-sprite-tweens
       lock-tetrominos
       add-new-tetrominos
       transfer-locked-tetrominos
