@@ -9,13 +9,37 @@
 (defn sprites
   "The initial list of sprites for this scene"
   []
-  [(t/tetromino [300 800])])
+  [(qpsprite/image-sprite
+    :background
+    [(/ (q/width) 2)
+     (- (q/height) 2000)]
+    1024
+    4000
+    "img/big-background.png")
+   (t/tetromino [300 800])])
 
 (defn draw-level-01
   "Called each frame, draws the current scene to the screen"
   [state]
-  (qpu/background common/blue)
-  (qpsprite/draw-scene-sprites state))
+  (qpu/background common/space-black)
+  (qpsprite/draw-scene-sprites state)
+
+  (when (:debug-mode? state)
+
+    ;; draw framerate
+    (q/text-align :left :center)
+    (q/text (str "FPS: " (format "%.2f" (:current-framerate state))) 50 50)
+
+    ;; draw processed mino count
+    (q/text (str "hot: "
+                 (count (filter (qpsprite/group-pred :mino)
+                                (get-in state [:scenes (:current-scene state) :sprites]))))
+            50 100)
+
+    ; cold storage mino count
+    (q/text (str "cold: "
+                 (count (get-in state [:scenes (:current-scene state) :off-screen-minos])))
+            50 150)))
 
 (defn lock-tetrominos
   "Find any tetrominos which have _just_ about to move where moving down
@@ -55,14 +79,78 @@
                             t/all-minos
                             m/create-multiple))))))
 
+(defn transfer-off-screen-minos
+  "Move minos which have moved off the bottom of the screen out of the
+  sprites list and into cold storage so we don't process them every
+  frame.
+
+  We can retrieve them later for the game end."
+  [{:keys [current-scene] :as state}]
+  (let [sprites (get-in state [:scenes current-scene :sprites])
+        minos (filter (qpsprite/group-pred :mino) sprites)
+        others (remove (qpsprite/group-pred :mino) sprites)
+        off-screen (filter (fn [m]
+                             (<= (q/height) (get-in m [:pos 1])))
+                           minos)
+        on-screen  (remove (fn [m]
+                             (<= (q/height) (get-in m [:pos 1])))
+                           minos)]
+    (-> state
+        (assoc-in [:scenes current-scene :sprites]
+                  (concat others
+                          on-screen))
+        (update-in [:scenes current-scene :off-screen-minos]
+                   concat off-screen))))
+
+(defn move-camera
+  "Whenever we lock-in tetrominos that end up with a mino above half the
+  height of the screen, we should move everything down, effectively
+  adjusting the camera position.
+
+  We start to drop below 60fps after updating+drawing ~250 minos, we
+  drop to 30fps after ~500.
+
+  This kinda works as even with a near perect fill you can only get
+  ~200 minos on screen before we start to scroll."
+  [{:keys [current-scene] :as state}]
+  ;; since this will only move by one mino-height per frame it takes a
+  ;; few frames if we add a tall piece, it's reasonably smooth.
+  (let [sprites (get-in state [:scenes current-scene :sprites])
+        minos (filter (qpsprite/group-pred :mino) sprites)
+        highest (first (sort-by (comp second :pos) minos))]
+    (if (and (seq minos)
+             (< (get-in highest [:pos 1]) (/ (q/height) 2)))
+      (-> state
+          ;; move minos down by a mino height
+          (qpsprite/update-sprites-by-pred
+           #(#{:tetromino :mino} (:sprite-group %))
+           (fn [s]
+             (update-in s [:pos 1] + (:h s))))
+          ;; move background down by a pixel to give some parallax
+          (qpsprite/update-sprites-by-pred
+           (qpsprite/group-pred :background)
+           (fn [s]
+             (update s :pos (partial map +) [0 3]))))
+      state)))
+
+(defn update-framerate
+  [{:keys [last-frame-time] :as state}]
+  (let [now (q/millis)]
+    (-> state
+        (assoc :current-framerate (float (* 1000 (/ 1 (- now last-frame-time)))))
+        (assoc :last-frame-time now))))
+
 (defn update-level-01
   "Called each frame, update the sprites in the current scene"
   [state]
   (-> state
+      update-framerate
       qpsprite/update-scene-sprites
       lock-tetrominos
       add-new-tetrominos
-      transfer-locked-tetrominos))
+      transfer-locked-tetrominos
+      transfer-off-screen-minos
+      move-camera))
 
 (defn handle-left
   [{:keys [current-scene] :as state}]
@@ -113,6 +201,10 @@
   [{:keys [current-scene] :as state}]
   (assoc-in state [:scenes current-scene] (init)))
 
+(defn toggle-debug-mode
+  [state]
+  (update state :debug-mode? not))
+
 (defn handle-keys
   "Takes the state, the key event that just happened and a map of `{key
   => handler}` where key is either the `:key` field of the event or
@@ -137,7 +229,8 @@
                 :up handle-up
                 :down handle-down
                 :space handle-space-down
-                :r reset}))
+                :r reset
+                :d toggle-debug-mode}))
 
 (defn handle-key-released
   [state e]

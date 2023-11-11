@@ -8,7 +8,9 @@
 (defn setup
   "The initial state of the game"
   []
-  {})
+  {:current-framerate 0.0
+   :last-frame-time 1
+   :debug-mode? false})
 
 (defn init-scenes
   "Map of scenes in the game"

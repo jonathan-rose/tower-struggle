@@ -48,6 +48,7 @@
 (def white [230 235 224])
 (def grey [57 57 58])
 (def black [19 18 0])
+(def space-black [29 20 37])
 
 (defn draw-simple-sprite
   "Simple box with a cross."
