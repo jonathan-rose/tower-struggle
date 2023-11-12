@@ -37,10 +37,10 @@
   "Draws a rectangle of dashed lines using Quil line primitives."
   [x y w h]
   (q/stroke common/black)
-  (let [o (tower-outline x y w h)
-        dash-length (imn w h 10)]
-    (doseq [[key value] o]
-      (let [distance (apply q/dist value)
+  (let [outline (tower-outline x y w h)
+        dash-length (min w h 10)]
+    (doseq [[_side coords] outline]
+      (let [distance (apply q/dist coords)
             dash-count (int (/ distance dash-length))
             [x1 y1 x2 y2] coords
             x-inc (/ (- x2 x1) dash-count)
@@ -55,7 +55,7 @@
 (defn draw-level-01
   "Called each frame, draws the current scene to the screen"
   [state]
-  
+
   (qpu/background common/space-black)
   (qpsprite/draw-scene-sprites state)
   (draw-tower-outline 50 50 100 400)
