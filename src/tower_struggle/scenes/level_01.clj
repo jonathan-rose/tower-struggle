@@ -35,8 +35,9 @@
 
 (defn draw-tower-outline
   "Draws a rectangle of dashed lines using Quil line primitives."
-  [x y w h]
-  (q/stroke common/black)
+  [x y w h stroke]
+  (q/fill (conj common/grey 150))
+  (q/rect x y w h)
   (let [outline (tower-outline x y w h)
         dash-length (min w h 10)]
     (doseq [[_side coords] outline]
@@ -50,6 +51,8 @@
                 y-start (+ y1 (* i y-inc))
                 x-end (+ x1 (* (inc i) x-inc))
                 y-end (+ y1 (* (inc i) y-inc))]
+            (q/stroke common/black)
+            (q/stroke-weight stroke)
             (q/line x-start y-start x-end y-end)))))))
 
 (defn draw-level-01
@@ -58,7 +61,7 @@
 
   (qpu/background common/space-black)
   (qpsprite/draw-scene-sprites state)
-  (draw-tower-outline 50 50 100 400)
+  (draw-tower-outline 50 50 100 400 3)
 
   (when (:debug-mode? state)
 
