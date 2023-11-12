@@ -24,15 +24,14 @@
   [x y w h]
   (let [tower-width w
         tower-height h
-        coords {:tl  [x y]
-                :tr  [(+ x tower-width) y]
-                :bl  [x (+ y tower-height)]
-                :br  [(+ x tower-width) (+ y tower-height)]}
-        sides {:left   (concat (coords :tl) (coords :bl))
-               :right  (concat (coords :tr) (coords :br))
-               :top    (concat (coords :tl) (coords :tr))
-               :bottom (concat (coords :br) (coords :bl))}]
-    sides))
+        tl [x y]
+        tr [(+ x tower-width) y]
+        bl [x (+ y tower-height)]
+        br [(+ x tower-width) (+ y tower-height)]]
+    {:left   (concat tl bl)
+     :right  (concat tr br)
+     :top    (concat tl tr)
+     :bottom (concat br bl)}))
 
 (defn draw-tower-outline
   "Draws a rectangle of dashed lines using Quil line primitives."
