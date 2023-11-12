@@ -42,10 +42,7 @@
     (doseq [[key value] o]
       (let [distance (apply q/dist value)
             dash-count (int (/ distance dash-length))
-            x1 (first value)
-            y1 (second value)
-            x2 (nth value 2)
-            y2 (nth value 3)
+            [x1 y1 x2 y2] coords
             x-inc (/ (- x2 x1) dash-count)
             y-inc (/ (- y2 y1) dash-count)]
         (doseq [i (range 0 dash-count 2)]
