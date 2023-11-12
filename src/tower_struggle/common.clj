@@ -86,3 +86,17 @@
           :draw-fn draw-fn
           :bounds-fn bounds-fn}
          other))
+
+(defn draw-scene-sprite-groups
+  "Draws specific sprite groups to the screen.
+
+  `chosen-group?` is a set of `:sprite-group` keywords."
+  [{:keys [current-scene] :as state} chosen-group?]
+  (let [sprites (filter
+                 (fn [s]
+                   (chosen-group? (:sprite-group s)))
+                 (get-in state [:scenes current-scene :sprites]))]
+    (doall
+     (map (fn [s]
+            ((:draw-fn s) s))
+          sprites))))
