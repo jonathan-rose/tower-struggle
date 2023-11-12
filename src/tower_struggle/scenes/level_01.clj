@@ -38,7 +38,7 @@
   [x y w h]
   (q/stroke common/black)
   (let [o (tower-outline x y w h)
-        dash-length 10]
+        dash-length (imn w h 10)]
     (doseq [[key value] o]
       (let [distance (apply q/dist value)
             dash-count (int (/ distance dash-length))
