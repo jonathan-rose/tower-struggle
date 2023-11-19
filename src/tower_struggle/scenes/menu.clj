@@ -47,6 +47,7 @@
 (defn on-click-play
   "Transition from this scene to `:level-01` with a 30 frame fade-out"
   [state e]
+  (qpsound/play "paper-flip.wav")
   (qpsound/stop lobby-sounds)
   (qpscene/transition state :level-01 :transition-length 30))
 
