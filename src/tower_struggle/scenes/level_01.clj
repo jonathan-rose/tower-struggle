@@ -36,7 +36,7 @@
 (defn draw-tower-outline
   "Draws a rectangle of dashed lines using Quil line primitives."
   [x y w h stroke]
-  (q/fill (conj common/grey 150))
+  (q/fill (conj common/grey 100))
   (q/rect x y w h)
   (let [outline (tower-outline x y w h)
         dash-length (min w h 10)]
@@ -55,14 +55,25 @@
             (q/stroke-weight stroke)
             (q/line x-start y-start x-end y-end)))))))
 
+(defn init-outline
+  "Initialise the tower outline."
+  [w]
+  (let [tower-width w
+        tower-height (+ (q/height) 20)
+        stroke-width 3
+        display-width (q/width)
+        display-height (q/height)
+        x (- (/ display-width  2) (/ tower-width 2))
+        y (- (/ display-height  2) (/ tower-height 2))]
+    (draw-tower-outline x y tower-width tower-height stroke-width)))
+
 (defn draw-level-01
   "Called each frame, draws the current scene to the screen"
   [state]
 
   (qpu/background common/space-black)
   (qpsprite/draw-scene-sprites state)
-  (draw-tower-outline 50 50 100 400 3)
-
+  (init-outline 200)
   (when (:debug-mode? state)
 
     ;; draw framerate
@@ -92,7 +103,10 @@
           (let [updated-tetromino (update-in s [:pos 1] + (:h s))]
             (not (t/allowed-location? state updated-tetromino)))))
    (fn [s]
-     (qpsound/play "click.wav")
+     (let [clicks ["click.wav"
+                   "click2.wav"
+                   "click3.wav"]]
+       (qpsound/play (rand-nth clicks)))
      (assoc s :locked? true))))
 
 (defn add-new-tetrominos
