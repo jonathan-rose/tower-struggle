@@ -4,6 +4,7 @@
             [quip.sprite :as qpsprite]
             [quip.sprites.button :as qpbutton]
             [quip.scene :as qpscene]
+            [quip.sound :as qpsound]
             [quip.utils :as qpu]
             [tower-struggle.common :as common]))
 
@@ -46,6 +47,7 @@
 (defn on-click-play
   "Transition from this scene to `:level-01` with a 30 frame fade-out"
   [state e]
+  (qpsound/stop lobby-sounds)
   (qpscene/transition state :level-01 :transition-length 30))
 
 (defn sprites
@@ -112,6 +114,7 @@
 (defn init
   "Initialise this scene"
   []
+  (def lobby-sounds (qpsound/loop-music "menu-background-test.wav"))
   {:sprites (sprites)
    :draw-fn draw-menu
    :update-fn update-menu
