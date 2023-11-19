@@ -20,12 +20,60 @@
     "img/big-background.png")
    (t/tetromino [300 800])])
 
+(defn tower-outline
+  [x y w h]
+  (let [tower-width w
+        tower-height h
+        tl [x y]
+        tr [(+ x tower-width) y]
+        bl [x (+ y tower-height)]
+        br [(+ x tower-width) (+ y tower-height)]]
+    {:left   (concat tl bl)
+     :right  (concat tr br)
+     :top    (concat tl tr)
+     :bottom (concat br bl)}))
+
+(defn draw-tower-outline
+  "Draws a rectangle of dashed lines using Quil line primitives."
+  [x y w h stroke]
+  (q/fill (conj common/grey 100))
+  (q/rect x y w h)
+  (let [outline (tower-outline x y w h)
+        dash-length (min w h 10)]
+    (doseq [[_side coords] outline]
+      (let [distance (apply q/dist coords)
+            dash-count (int (/ distance dash-length))
+            [x1 y1 x2 y2] coords
+            x-inc (/ (- x2 x1) dash-count)
+            y-inc (/ (- y2 y1) dash-count)]
+        (doseq [i (range 0 dash-count 2)]
+          (let [x-start (+ x1 (* i x-inc))
+                y-start (+ y1 (* i y-inc))
+                x-end (+ x1 (* (inc i) x-inc))
+                y-end (+ y1 (* (inc i) y-inc))]
+            (q/stroke common/black)
+            (q/stroke-weight stroke)
+            (q/line x-start y-start x-end y-end)))))))
+
+(defn init-outline
+  "Initialise the tower outline."
+  [w]
+  (let [tower-width w
+        tower-height (+ (q/height) 20)
+        stroke-width 3
+        display-width (q/width)
+        display-height (q/height)
+        x (- (/ display-width  2) (/ tower-width 2))
+        y (- (/ display-height  2) (/ tower-height 2))]
+    (draw-tower-outline x y tower-width tower-height stroke-width)))
+
 (defn draw-level-01
   "Called each frame, draws the current scene to the screen"
   [state]
+
   (qpu/background common/space-black)
   (qpsprite/draw-scene-sprites state)
-
+  (init-outline 200)
   (when (:debug-mode? state)
 
     ;; draw framerate
@@ -55,7 +103,10 @@
           (let [updated-tetromino (update-in s [:pos 1] + (:h s))]
             (not (t/allowed-location? state updated-tetromino)))))
    (fn [s]
-     (qpsound/play "click.wav")
+     (let [clicks ["click.wav"
+                   "click2.wav"
+                   "click3.wav"]]
+       (qpsound/play (rand-nth clicks)))
      (assoc s :locked? true))))
 
 (defn add-new-tetrominos
