@@ -3,6 +3,7 @@
   (:require [quip.core :as qp]
             [tower-struggle.scenes.menu :as menu]
             [tower-struggle.scenes.level-01 :as level-01]
+            [tower-struggle.scenes.outro :as outro]
             [tower-struggle.common :as common]))
 
 (defn setup
@@ -10,13 +11,16 @@
   []
   {:current-framerate 0.0
    :last-frame-time 1
-   :debug-mode? false})
+   :debug-mode? false
+   :outro-started? false
+   :off-screen-rows 0})
 
 (defn init-scenes
   "Map of scenes in the game"
   []
   {:menu     (menu/init)
-   :level-01 (level-01/init)})
+   :level-01 (level-01/init)
+   :outro (outro/init)})
 
 ;; Configure the game
 (def tower-struggle-game

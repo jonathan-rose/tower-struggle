@@ -1,5 +1,6 @@
 (ns tower-struggle.scenes.level-01
   (:require [quil.core :as q]
+            [quip.scene :as qpscene]
             [quip.sprite :as qpsprite]
             [quip.sound :as qpsound]
             [quip.tween :as qptween]
@@ -11,14 +12,16 @@
 (defn sprites
   "The initial list of sprites for this scene"
   []
-  [(qpsprite/image-sprite
-    :background
-    [(/ (q/width) 2)
-     (- (q/height) 2000)]
-    1024
-    4000
-    "img/big-background.png")
-   (t/tetromino [300 800])])
+  (let [bg-init-pos [(/ (q/width) 2)
+                     (- (q/height) 2000)]]
+    [(assoc (qpsprite/image-sprite
+             :background
+             bg-init-pos
+             1024
+             4000
+             "img/big-background.png")
+            :init-pos bg-init-pos)
+     (t/tetromino [300 800])]))
 
 (defn tower-outline
   [x y w h]
@@ -70,10 +73,13 @@
 (defn draw-level-01
   "Called each frame, draws the current scene to the screen"
   [state]
-
   (qpu/background common/space-black)
-  (qpsprite/draw-scene-sprites state)
+  (common/draw-scene-sprite-groups state #{:background})
   (init-outline 200)
+  (common/draw-scene-sprite-groups state #{:tetromino
+                                           :background-cover
+                                           :mino
+                                           :old-mino})
   (when (:debug-mode? state)
 
     ;; draw framerate
@@ -89,7 +95,8 @@
     ; cold storage mino count
     (q/text (str "cold: "
                  (count (get-in state [:scenes (:current-scene state) :off-screen-minos])))
-            50 150)))
+            50 150))
+  )
 
 (defn lock-tetrominos
   "Find any tetrominos which have _just_ about to move where moving down
@@ -126,12 +133,13 @@
         locked (filter :locked? tetrominos)
         unlocked (remove :locked? tetrominos)]
     (assoc-in state [:scenes current-scene :sprites]
-              (concat others
-                      unlocked
-                      (when (seq locked)
-                        (-> locked
-                            t/all-minos
-                            m/create-multiple))))))
+              (doall
+               (concat others
+                       unlocked
+                       (when (seq locked)
+                         (-> locked
+                             t/all-minos
+                             m/create-multiple)))))))
 
 (defn transfer-off-screen-minos
   "Move minos which have moved off the bottom of the screen out of the
@@ -139,22 +147,28 @@
   frame.
 
   We can retrieve them later for the game end."
-  [{:keys [current-scene] :as state}]
+  [{:keys [current-scene off-screen-rows] :as state}]
   (let [sprites (get-in state [:scenes current-scene :sprites])
         minos (filter (qpsprite/group-pred :mino) sprites)
+        cold-minos (get-in state [:scenes current-scene :off-screen-minos])
         others (remove (qpsprite/group-pred :mino) sprites)
         off-screen (filter (fn [m]
                              (<= (q/height) (get-in m [:pos 1])))
                            minos)
-        on-screen  (remove (fn [m]
-                             (<= (q/height) (get-in m [:pos 1])))
-                           minos)]
+        on-screen (remove (fn [m]
+                            (<= (q/height) (get-in m [:pos 1])))
+                          minos)]
     (-> state
         (assoc-in [:scenes current-scene :sprites]
-                  (concat others
-                          on-screen))
-        (update-in [:scenes current-scene :off-screen-minos]
-                   concat off-screen))))
+                  (doall
+                   (concat others
+                           on-screen)))
+        (assoc-in [:scenes current-scene :off-screen-minos]
+                  (doall
+                   (concat cold-minos
+                           (map (fn [m]
+                                  (assoc m :off-screen-rows off-screen-rows))
+                                off-screen)))))))
 
 (defn move-camera
   "Whenever we lock-in tetrominos that end up with a mino above half the
@@ -175,6 +189,7 @@
     (if (and (seq minos)
              (< (get-in highest [:pos 1]) (/ (q/height) 2)))
       (-> state
+          (update :off-screen-rows inc)
           ;; move minos down by a mino height
           (qpsprite/update-sprites-by-pred
            #(#{:tetromino :mino} (:sprite-group %))
@@ -268,6 +283,26 @@
   [state]
   (update state :debug-mode? not))
 
+(defn end-game
+  [{:keys [current-scene] :as state}]
+  (let [sprites (get-in state [:scenes current-scene :sprites])
+        off-screen-minos (get-in state [:scenes current-scene :off-screen-minos])]
+    (qpscene/transition
+     state
+     :outro
+     :transition-fn (fn [state progress max] state)
+     :transition-length 0
+     :init-fn (fn [s]                
+                (-> s
+                    ;; transfer the locked-in minos and background
+                    (assoc-in [:scenes :outro :sprites]
+                              (filter (fn [{sp :sprite-group}]
+                                        (#{:background :mino} sp))
+                                      sprites))
+                    ;; transfer the off-screen minos
+                    (assoc-in [:scenes :outro :off-screen-minos] off-screen-minos)
+                    (assoc :outro-started? false))))))
+
 (defn handle-keys
   "Takes the state, the key event that just happened and a map of `{key
   => handler}` where key is either the `:key` field of the event or
@@ -293,7 +328,8 @@
                 :down handle-down
                 :space handle-space-down
                 :r reset
-                :d toggle-debug-mode}))
+                :d toggle-debug-mode
+                :q end-game}))
 
 (defn handle-key-released
   [state e]

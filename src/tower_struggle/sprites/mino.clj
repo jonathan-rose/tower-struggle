@@ -8,12 +8,9 @@
             [tower-struggle.common :as common]))
 
 (defn draw-mino
-  [{:keys [display-pos display-w display-h room] :as mino}]
+  [{:keys [display-pos display-w display-h color] :as mino}]
   (let [[x y] display-pos]
-    (case room
-      :resi (qpu/fill (qpu/darken common/purple))
-      :comm (qpu/fill (qpu/darken common/yellow))
-      :util (qpu/fill (qpu/darken common/orange)))
+    (qpu/fill color)
     (q/no-stroke)
     (q/rect x y display-w display-h)))
 
@@ -62,7 +59,10 @@
            :h size
            :draw-fn draw-mino
            :update-fn identity
-           :other {:room room
+           :other {:color (case room
+                            :resi (vec (qpu/darken common/purple))
+                            :comm (vec (qpu/darken common/yellow))
+                            :util (vec (qpu/darken common/orange)))
                    ;; these are for drawing, the real ones are for
                    ;; collisions etc.
                    :display-w size
