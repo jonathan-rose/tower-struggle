@@ -2,6 +2,7 @@
   (:require [quil.core :as q]
             [quip.utils :as qpu]
             [quip.delay :as qpdelay]
+            [quip.scene :as qpscene]
             [quip.sprite :as qpsprite]
             [quip.tween :as qptween]
             [tower-struggle.common :as common]
@@ -144,4 +145,7 @@
   {:sprites [] ;; will get populated by the scene transition
    :draw-fn draw-outro
    :update-fn update-outro
-   :delays [(qpdelay/delay fade-time add-movement-tweens)]})
+   :delays [(qpdelay/delay fade-time add-movement-tweens)
+            (qpdelay/delay (+ 200 fade-time)
+                           (fn [state]
+                             (qpscene/transition state :conclusion)))]})
