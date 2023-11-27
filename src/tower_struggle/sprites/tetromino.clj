@@ -14,6 +14,7 @@
   (:require [quil.core :as q]
             [quip.sprite :as qpsprite]
             [quip.utils :as qpu]
+            [quip.sound :as qpsound]
             [tower-struggle.common :as common]))
 
 ;; ░░░░░░░░  ░░░░██░░  ░░░░░░░░  ░░██░░░░
@@ -175,6 +176,10 @@
                         locked-minos)))
                minos))))
 
+(defn play-rotate-sound
+  []
+  (qpsound/play "pop1.wav"))
+
 (defn move-left
   [state {:keys [locked? pos] :as t}]
   (if locked?
@@ -197,19 +202,21 @@
   [state {:keys [locked?] :as t}]
   (if locked?
     t
-    (let [updated-t (update t :current-rotation (fn [n] (mod (inc n) 4)))]
-      (if (allowed-location? state updated-t)
-        updated-t
-        t))))
+    (do (play-rotate-sound)
+        (let [updated-t (update t :current-rotation (fn [n] (mod (inc n) 4)))]
+          (if (allowed-location? state updated-t)
+            updated-t
+            t)))))
 
 (defn rotate-anticlockwise
   [state {:keys [locked?] :as t}]
   (if locked?
     t
-    (let [updated-t (update t :current-rotation (fn [n] (mod (dec n) 4)))]
-      (if (allowed-location? state updated-t)
-        updated-t
-        t))))
+    (do (play-rotate-sound)
+        (let [updated-t (update t :current-rotation (fn [n] (mod (dec n) 4)))]
+         (if (allowed-location? state updated-t)
+           updated-t
+           t)))))
 
 (defn fast-speed
   [{:keys [max-fall-delay] :as t}]
