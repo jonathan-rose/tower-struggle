@@ -75,7 +75,7 @@
   [state]
   (qpu/background common/space-black)
   (common/draw-scene-sprite-groups state #{:background})
-  (init-outline 200)
+  (init-outline 400)
   (common/draw-scene-sprite-groups state #{:tetromino
                                            :background-cover
                                            :mino
@@ -292,7 +292,7 @@
      :outro
      :transition-fn (fn [state progress max] state)
      :transition-length 0
-     :init-fn (fn [s]                
+     :init-fn (fn [s]
                 (-> s
                     ;; transfer the locked-in minos and background
                     (assoc-in [:scenes :outro :sprites]
