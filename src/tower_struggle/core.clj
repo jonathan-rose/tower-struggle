@@ -4,6 +4,7 @@
             [tower-struggle.scenes.menu :as menu]
             [tower-struggle.scenes.level-01 :as level-01]
             [tower-struggle.scenes.outro :as outro]
+            [tower-struggle.scenes.conclusion :as conclusion]
             [tower-struggle.common :as common]))
 
 (defn setup
@@ -20,7 +21,8 @@
   []
   {:menu     (menu/init)
    :level-01 (level-01/init)
-   :outro (outro/init)})
+   :outro (outro/init)
+   :conclusion (conclusion/init)})
 
 ;; Configure the game
 (def tower-struggle-game
