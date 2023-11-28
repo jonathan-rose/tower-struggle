@@ -1,6 +1,7 @@
 (ns tower-struggle.core
   (:gen-class)
   (:require [quip.core :as qp]
+            [quip.sound :as qpsound]
             [tower-struggle.scenes.menu :as menu]
             [tower-struggle.scenes.level-01 :as level-01]
             [tower-struggle.scenes.outro :as outro]
@@ -33,7 +34,9 @@
                                   2000)]
             :setup          setup
             :init-scenes-fn init-scenes
-            :current-scene  :menu}))
+            :current-scene  :menu
+            :on-close (fn [_]
+                        (qpsound/stop-music))}))
 
 (defn -main
   "Run the game"

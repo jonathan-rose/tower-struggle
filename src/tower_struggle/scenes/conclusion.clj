@@ -37,10 +37,10 @@
     [200 remove-sprites]
     [100 (texts ["THIS MUST BE GOOD"])]
     [300 (fn [state]
-           ;; Little bit of a hack to reset some of the state here
            (-> state
-               (merge (tower-struggle.core/setup))
-               (assoc :scenes (tower-struggle.core/init-scenes))
+               ;; AHHH THIS DOESN'T WORK
+               ;; (merge (tower-struggle.core/setup))
+               ;; (assoc :scenes (tower-struggle.core/init-scenes))
                (qpscene/transition :menu)))]]))
 
 (defn update-conclusion
