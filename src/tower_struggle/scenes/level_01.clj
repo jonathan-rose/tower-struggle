@@ -14,7 +14,8 @@
   []
   (let [bg-init-pos [(/ (q/width) 2)
                      (- (q/height) 2000)]]
-    [(assoc (qpsprite/image-sprite
+    [(qpsprite/text-sprite "Score: " [50 30])
+     (assoc (qpsprite/image-sprite
              :background
              bg-init-pos
              1024
@@ -79,7 +80,8 @@
   (common/draw-scene-sprite-groups state #{:tetromino
                                            :background-cover
                                            :mino
-                                           :old-mino})
+                                           :old-mino
+                                           :text})
   (when (:debug-mode? state)
 
     ;; draw framerate
