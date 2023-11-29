@@ -12,7 +12,7 @@
   [state e]
   (qpsound/play "paper-flip.wav")
   (qpsound/stop-music)
-  (qpsound/loop-music "tower-stuggle-loopable.wav")
+  (qpsound/loop-music "tower-struggle-loopable.wav")
   (qpscene/transition state :level-01 :transition-length 30))
 
 (defn sprites
