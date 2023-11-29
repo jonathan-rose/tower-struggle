@@ -9,12 +9,16 @@
             [tower-struggle.sprites.tetromino :as t]
             [tower-struggle.sprites.mino :as m]))
 
+(def score (atom 0))
+
+(def score-text (str "Score: " @score))
+
 (defn sprites
   "The initial list of sprites for this scene"
   []
   (let [bg-init-pos [(/ (q/width) 2)
                      (- (q/height) 2000)]]
-    [(qpsprite/text-sprite "Score: " [50 30])
+    [(qpsprite/text-sprite score-text [10 30] :offsets [:left])
      (assoc (qpsprite/image-sprite
              :background
              bg-init-pos
@@ -82,6 +86,7 @@
                                            :mino
                                            :old-mino
                                            :text})
+
   (when (:debug-mode? state)
 
     ;; draw framerate
