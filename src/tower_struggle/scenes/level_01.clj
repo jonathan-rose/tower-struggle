@@ -7,7 +7,8 @@
             [quip.utils :as qpu]
             [tower-struggle.common :as common]
             [tower-struggle.sprites.tetromino :as t]
-            [tower-struggle.sprites.mino :as m]))
+            [tower-struggle.sprites.mino :as m]
+            [tower-struggle.sprites.countdown :as c]))
 
 (defn sprites
   "The initial list of sprites for this scene"
@@ -21,6 +22,7 @@
              4000
              "img/big-background.png")
             :init-pos bg-init-pos)
+     (c/countdown [(* 0.925 (q/width)) 155] 120)
      (t/tetromino [300 800])]))
 
 (defn tower-outline
@@ -76,7 +78,8 @@
   (qpu/background common/space-black)
   (common/draw-scene-sprite-groups state #{:background})
   (init-outline 400)
-  (common/draw-scene-sprite-groups state #{:tetromino
+  (common/draw-scene-sprite-groups state #{:countdown
+                                           :tetromino
                                            :background-cover
                                            :mino
                                            :old-mino})
@@ -88,9 +91,16 @@
                     (format "%.10e" (bigdec score))
                     score)]
     (qpu/fill common/grey)
-    (q/text (str "Score: " score-str) 50 50)
+    (q/text (str "Score") 10 50)
+    (q/text (str score-str) 10 120)
     (qpu/fill common/white)
-    (q/text (str "Score: " score-str) 52 52)))
+    (q/text (str "Score") 12 52)
+    (q/text (str score-str) 12 122)
+
+    (qpu/fill common/grey)
+    (q/text (str "Time") (- (q/width) 185) 50)
+    (qpu/fill common/white)
+    (q/text (str "Time") (- (q/width) 183) 52)))
 
 (defn lock-tetrominos
   "Find any tetrominos which have _just_ about to move where moving down
@@ -258,6 +268,33 @@
         (assoc :current-framerate (float (* 1000 (/ 1 (- now last-frame-time)))))
         (assoc :last-frame-time now))))
 
+(defn end-game
+  [{:keys [current-scene] :as state}]
+  (let [sprites (get-in state [:scenes current-scene :sprites])
+        off-screen-minos (get-in state [:scenes current-scene :off-screen-minos])]
+    (qpscene/transition
+     state
+     :outro
+     :transition-fn (fn [state progress max] state)
+     :transition-length 0
+     :init-fn (fn [s]
+                (-> s
+                    ;; transfer the locked-in minos and background
+                    (assoc-in [:scenes :outro :sprites]
+                              (filter (fn [{sp :sprite-group}]
+                                        (#{:background :mino} sp))
+                                      sprites))
+                    ;; transfer the off-screen minos
+                    (assoc-in [:scenes :outro :off-screen-minos] off-screen-minos)
+                    (assoc :outro-started? false))))))
+
+(defn maybe-end-game
+  [{:keys [current-scene] :as state}]
+  (let [countdown (first (filter (qpsprite/group-pred :countdown) (get-in state [:scenes current-scene :sprites])))]
+    (if (<= (:remaining countdown) 0)
+      (end-game state)
+      state)))
+
 (defn update-level-01
   "Called each frame, update the sprites in the current scene"
   [state]
@@ -269,7 +306,8 @@
       add-new-tetrominos
       transfer-locked-tetrominos
       transfer-off-screen-minos
-      move-camera))
+      move-camera
+      maybe-end-game))
 
 (defn handle-left
   [{:keys [current-scene] :as state}]
@@ -324,26 +362,6 @@
   [state]
   (update state :debug-mode? not))
 
-(defn end-game
-  [{:keys [current-scene] :as state}]
-  (let [sprites (get-in state [:scenes current-scene :sprites])
-        off-screen-minos (get-in state [:scenes current-scene :off-screen-minos])]
-    (qpscene/transition
-     state
-     :outro
-     :transition-fn (fn [state progress max] state)
-     :transition-length 0
-     :init-fn (fn [s]
-                (-> s
-                    ;; transfer the locked-in minos and background
-                    (assoc-in [:scenes :outro :sprites]
-                              (filter (fn [{sp :sprite-group}]
-                                        (#{:background :mino} sp))
-                                      sprites))
-                    ;; transfer the off-screen minos
-                    (assoc-in [:scenes :outro :off-screen-minos] off-screen-minos)
-                    (assoc :outro-started? false))))))
-
 (defn handle-keys
   "Takes the state, the key event that just happened and a map of `{key
   => handler}` where key is either the `:key` field of the event or
@@ -367,10 +385,7 @@
                 :right handle-right
                 :up handle-up
                 :down handle-down
-                :space handle-space-down
-                :r reset
-                :d toggle-debug-mode
-                :q end-game}))
+                :space handle-space-down}))
 
 (defn handle-key-released
   [state e]
