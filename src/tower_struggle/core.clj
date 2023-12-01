@@ -15,7 +15,8 @@
    :last-frame-time 1
    :debug-mode? false
    :outro-started? false
-   :off-screen-rows 0})
+   :off-screen-rows 0
+   :score 0})
 
 (defn init-scenes
   "Map of scenes in the game"

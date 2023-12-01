@@ -59,7 +59,8 @@
            :h size
            :draw-fn draw-mino
            :update-fn identity
-           :other {:color (case room
+           :other {:room room
+                   :color (case room
                             :resi (vec (qpu/darken common/purple))
                             :comm (vec (qpu/darken common/yellow))
                             :util (vec (qpu/darken common/orange)))

@@ -80,23 +80,17 @@
                                            :background-cover
                                            :mino
                                            :old-mino})
-  (when (:debug-mode? state)
 
-    ;; draw framerate
-    (q/text-align :left :center)
-    (q/text (str "FPS: " (format "%.2f" (:current-framerate state))) 50 50)
+  (q/text-align :left :center)
 
-    ;; draw processed mino count
-    (q/text (str "hot: "
-                 (count (filter (qpsprite/group-pred :mino)
-                                (get-in state [:scenes (:current-scene state) :sprites]))))
-            50 100)
-
-    ; cold storage mino count
-    (q/text (str "cold: "
-                 (count (get-in state [:scenes (:current-scene state) :off-screen-minos])))
-            50 150))
-  )
+  (let [score (:score state)
+        score-str (if (< 1e12 score)
+                    (format "%.10e" (bigdec score))
+                    score)]
+    (qpu/fill common/grey)
+    (q/text (str "Score: " score-str) 50 50)
+    (qpu/fill common/white)
+    (q/text (str "Score: " score-str) 52 52)))
 
 (defn lock-tetrominos
   "Find any tetrominos which have _just_ about to move where moving down
@@ -123,23 +117,70 @@
     (update-in state [:scenes current-scene :sprites] conj (t/tetromino [300 100]))
     state))
 
+;; a manhattan distance of 50 means adjacent, 100 is one further or diagonally adjacent
+
+(defn increment-score
+  "Increment the score as new minos get locked in.
+
+  If a mino is in the target build area we compare it to all other
+  on-target minos. If the minos are the same room type we calculate a
+  score based on their proximity.
+
+  We calculate the Manhattan distance between the minos if its 50 then
+  the minos are orthogonally adjacent, 100 is either diagonally
+  adjacent or one further orthogonally. We increment the score delta
+  based on this distance.
+
+  We multiply the score delta by an exponentially increasing
+  multiplier based on how many rows of the tower are off-screen."
+  [state minos new-minos]
+  (reduce (fn [acc-state new-mino]
+            ;; only on-target minos
+            (if (< 199 (first (:pos new-mino)) 600)
+              (let [ds (reduce (fn [acc mino]
+                                 ;; only on-target minos
+                                 (if (and (< 199 (first (:pos mino)) 600)
+                                          (= (:room mino) (:room new-mino)))
+                                   ;; Use manhattan distance
+                                   (let [md (apply + (map (comp abs -)
+                                                          (:pos mino)
+                                                          (:pos new-mino)))]
+                                     (cond
+                                       (<= md 50) (+ acc 100)
+                                       (<= 51 md 100) (+ acc 33)
+                                       (<= 101 md 150) (+ acc 8)
+                                       :else acc))
+                                   acc))
+                               0
+                               minos)
+                    ;; slow but exponentially increasing multiplier as tower get taller
+                    multiplier (+ 1 (* 0.01 (:off-screen-rows state) (:off-screen-rows state)))]
+                (update acc-state :score + (int (* ds multiplier))))
+              acc-state))
+          state
+          new-minos))
+
 (defn transfer-locked-tetrominos
   "Move tetrominos which have just been locked in to the longer term
   storage"
   [{:keys [current-scene] :as state}]
   (let [sprites (get-in state [:scenes current-scene :sprites])
         tetrominos (filter (qpsprite/group-pred :tetromino) sprites)
+        minos (filter (qpsprite/group-pred :mino) sprites)
         others (remove (qpsprite/group-pred :tetromino) sprites)
         locked (filter :locked? tetrominos)
-        unlocked (remove :locked? tetrominos)]
-    (assoc-in state [:scenes current-scene :sprites]
-              (doall
-               (concat others
-                       unlocked
-                       (when (seq locked)
-                         (-> locked
-                             t/all-minos
-                             m/create-multiple)))))))
+        unlocked (remove :locked? tetrominos)
+        new-minos (when (seq locked)
+                    (-> locked
+                        t/all-minos
+                        m/create-multiple))]
+    (-> state
+        (increment-score minos new-minos)
+        (assoc-in [:scenes current-scene :sprites]
+                  (doall
+                   (concat others
+                           unlocked
+                           new-minos))))))
 
 (defn transfer-off-screen-minos
   "Move minos which have moved off the bottom of the screen out of the
